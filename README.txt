@@ -1,6 +1,8 @@
 # Di chuyển vào thư mục scripts sau đó thực hiện lệnh:
 pip install -r requirements.txt
-python build_database.py
+
+# Di chuyển ra thư mục gốc:
+python ./scripts/build_database.py
 
 # Di chuyển vào backend
 pip install -r requirements.txt

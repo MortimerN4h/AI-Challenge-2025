@@ -22,7 +22,7 @@ METADATA_DB_FILE = DB_DIR / "metadata.json"
 FAISS_INDEX_FILE = DB_DIR / "faiss_index.bin"
 
 # Model CLIP để tạo image embedding (nếu bạn chưa tạo từ Colab)
-CLIP_MODEL_NAME = 'clip-ViT-B-32-multilingual-v1'
+CLIP_MODEL_NAME = 'clip-ViT-B-32'
 
 def build_database():
     """
@@ -31,8 +31,8 @@ def build_database():
     print(" Bắt đầu quá trình xây dựng database ".center(80, "="))
 
     # Tạo các thư mục cần thiết nếu chưa có
-    DB_DIR.mkdir(exist_ok=True)
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    DB_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
     # --- Bước 1: Tổng hợp Metadata từ các file JSON ---
@@ -72,7 +72,7 @@ def build_database():
     clip_model = SentenceTransformer(CLIP_MODEL_NAME)
     
     image_paths = [KEYFRAME_DIR / f for f in frame_files]
-    pil_images = [Image.open(path) for path in image_paths]
+    pil_images = [Image.open(path).convert("RGB") for path in image_paths]
 
     print("Bắt đầu mã hóa ảnh (đây là bước tốn thời gian nhất)...")
     image_embeddings = clip_model.encode(
