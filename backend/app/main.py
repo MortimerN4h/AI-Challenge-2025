@@ -3,6 +3,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from pathlib import Path
+import asyncio
+from googletrans import Translator
 
 # Import dịch vụ tìm kiếm
 from .search_service import search_service
@@ -36,6 +38,20 @@ async def api_search(request: SearchQuery):
         # Ghi log lỗi ở đây nếu cần
         print(f"Lỗi khi xử lý truy vấn: {e}")
         raise HTTPException(status_code=500, detail="Đã có lỗi xảy ra trong quá trình xử lý.")
+
+# API endpoint để dịch văn bản sử dụng LibreTranslate
+@app.post("/api/translate")
+async def translate(request: Request):
+    data = await request.json()
+    text = data.get("text", "")
+    if not text:
+        return JSONResponse({"error": "No text provided"}, status_code=400)
+    try:
+        translator = Translator()
+        result = await translator.translate(text, src="vi", dest="en")
+        return {"translated": result.text}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # --- Phục vụ File Tĩnh (Static Files) ---
 # Phục vụ các ảnh keyframes tại /keyframes

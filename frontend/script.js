@@ -13,6 +13,23 @@ const resultsInfo = document.getElementById('results-info');
 const API_SEARCH_URL = `/api/search`;
 const KEYFRAMES_BASE_URL = `/keyframes/`;
 
+// Hàm gọi API dịch
+async function translateQuery(query) {
+    try {
+        const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: query })
+        });
+        if (!response.ok) throw new Error('Translate API error');
+        const data = await response.json();
+        return data.translated || query;
+    } catch (err) {
+        console.error('Lỗi dịch truy vấn:', err);
+        return query; // fallback nếu dịch lỗi
+    }
+}
+
 /**
  * Hàm chính để thực hiện tìm kiếm.
  */
@@ -25,11 +42,13 @@ async function performSearch() {
     resultsInfo.innerHTML = '';
 
     try {
+        const translatedQuery = await translateQuery(query);
+
         const startTime = Date.now();
         const response = await fetch(API_SEARCH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query, k: 48 })
+            body: JSON.stringify({ query: translatedQuery, k: 48 })
         });
         const endTime = Date.now();
 
@@ -72,11 +91,49 @@ function displayResults(results, duration) {
             this.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 250 160"><rect width="100%" height="100%" fill="%23eee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23777">Image Not Found</text></svg>';
         };
 
+        // Icon copy
+        const copyIcon = document.createElement('img');
+        copyIcon.src = 'copy.png';
+        copyIcon.alt = 'Copy';
+        copyIcon.className = 'copy-icon';
+        copyIcon.style.position = 'absolute';
+        copyIcon.style.backgroundColor = 'white';
+        copyIcon.style.padding = '1px';
+        copyIcon.style.top = '8px';
+        copyIcon.style.right = '8px';
+        copyIcon.style.width = '20px';
+        copyIcon.style.height = '24px';
+        copyIcon.style.cursor = 'pointer';
+
+        copyIcon.addEventListener('click', async () => {
+            try {
+                // Tải ảnh về dạng blob
+                const response = await fetch(img.src);
+                const blob = await response.blob();
+
+                // Chuyển blob sang PNG bằng canvas
+                const bitmap = await createImageBitmap(blob);
+                const canvas = document.createElement('canvas');
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(bitmap, 0, 0);
+                canvas.toBlob(async (pngBlob) => {
+                    await navigator.clipboard.write([
+                        new window.ClipboardItem({ 'image/png': pngBlob })
+                    ]);
+                }, 'image/png');
+            } catch (err) {
+                console.error('Copy image failed:', err);
+            }
+        });
+
         const info = document.createElement('div');
         info.className = 'result-info';
         info.innerHTML = `ID: ${item.frame_id}<br>Score: ${item.score.toFixed(4)}`;
 
         itemDiv.appendChild(img);
+        itemDiv.appendChild(copyIcon);
         itemDiv.appendChild(info);
         resultsContainer.appendChild(itemDiv);
     });
